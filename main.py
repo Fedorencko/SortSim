@@ -3,6 +3,13 @@
      - ESC - exit
      - Space - pause/cont
      - R - Restart with a new array set
+
+TODO:
+    Убрать выход из программы на ESC;
+    Ввести поочерёдную сортировку друг за другом;
+    Ввести проверку на выполненность всех сортировок и автоматически перезапустить программу;
+    Поработать над разрешением (Отцентровать или ввести точное определение по разрешению и соотношению сторон);
+    Закинуть всю эту парашу на ГИТ!
 """
 import sys
 import os
@@ -78,7 +85,8 @@ def merge_sort(a: List[int]):
             arr[i] = aux[i]
             yield arr
 
-    yield from _merge_sort(0, len(arr))\
+    yield from _merge_sort(0, len(arr))
+
 
 def quick_sort(a: List[int]):
     arr = a
@@ -99,6 +107,7 @@ def quick_sort(a: List[int]):
         yield from _q(i+1, r)
 
     yield from _q(0, len(arr)-1)
+
 
 def heap_sort(a: List[int]):
     arr = a
@@ -123,6 +132,7 @@ def heap_sort(a: List[int]):
         yield arr
         yield from heapify(i, 0)
 
+
 def shell_sort(a: List[int]):
     arr = a
     n = len(arr)
@@ -139,6 +149,7 @@ def shell_sort(a: List[int]):
             yield arr
         gap //= 2
 
+
 def comb_sort(a: List[int]):
     arr = a
     n = len(arr)
@@ -154,6 +165,7 @@ def comb_sort(a: List[int]):
                 swapped = True
             yield arr
 
+
 def gnome_sort(a: List[int]):
     arr = a
     i = 0
@@ -164,6 +176,7 @@ def gnome_sort(a: List[int]):
             arr[i], arr[i-1] = arr[i-1], arr[i]
             i -= 1
         yield arr
+
 
 def tim_sort(a):
     arr = a
@@ -205,6 +218,8 @@ def tim_sort(a):
                 arr[left + i] = merged[i]
                 yield arr
         size *= 2
+
+
 
 ALGORITHMS = {
     'Bubble': bubble_sort,
@@ -322,6 +337,7 @@ DEFAULT_COLORS =  [(200, 80, 80), (80, 200, 120), (80, 150, 250), (230, 180, 70)
                   (200, 200, 100), (255, 180, 180)]
 
 
+
 def draw_array(surface, arr, color, x, y, w, h):
     n = len(arr)
     if n == 0:
@@ -333,95 +349,93 @@ def draw_array(surface, arr, color, x, y, w, h):
         rect = pygame.Rect(int(x + i * bar_width), int(y + h - bar_height), max(1, int(bar_width) - 1), int(bar_height))
         pygame.draw.rect(surface, color, rect)
 
+
 def main():
     pygame.init()
 
-    if WALLPAPER_MODE:
-        # Wallpaper mode
-        WIDTH, HEIGHT = pygame.display.list_modes()[0]
-        screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
-        pygame.mouse.set_visible(False)
-    else:
-        # def mode
-        WIDTH, HEIGHT = 1700, 900
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Сравнение алгоритмов сортировки")
-        clock = pygame.time.Clock()
+    # Auto resolution change
+    info = pygame.display.Info()
+    WIDTH, HEIGHT = info.current_w, info.current_h
 
-        n = 60
-        arr = [random.randint(1, 100) for _ in range(n)]
+    # Fullscreen -frame
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
+    pygame.display.set_caption("Sorting Algorithms")
+    pygame.mouse.set_visible(False)  # Hide a cursor
 
-        generators = {}
-        arrays = {}
-        done = {name: False for name in ALGORITHMS.keys()}
-        for i, (name, func) in enumerate(ALGORITHMS.items()):
-            arrays[name] = list(arr)
-            generators[name] = func(arrays[name])
+    clock = pygame.time.Clock()
 
-        current_colors = generate_gradient_scheme(len(ALGORITHMS))
+    # Inc elements for higher screen resolution
+    n = max(60, WIDTH // 25)
+    arr = [random.randint(1, 100) for _ in range(n)]
 
-        paused = False
-        running = True
+    generators = {}
+    arrays = {}
+    done = {name: False for name in ALGORITHMS.keys()}
+    for i, (name, func) in enumerate(ALGORITHMS.items()):
+        arrays[name] = list(arr)
+        generators[name] = func(arrays[name])
 
-        # Адаптивная компоновка для разных разрешений
-        cols = 4 if WIDTH < 1920 else 5
-        rows = math.ceil(len(ALGORITHMS) / cols)
-        panel_w = WIDTH // cols
-        panel_h = HEIGHT // rows
+    paused = False
+    running = True
 
-        font = pygame.font.SysFont('Arial', 18)
+    # Адаптивная компоновка для разных разрешений
+    cols = 4 if WIDTH < 1920 else 5
+    rows = math.ceil(len(ALGORITHMS) / cols)
+    panel_w = WIDTH // cols
+    panel_h = HEIGHT // rows
 
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+    font = pygame.font.SysFont('Arial', 16)
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                    elif event.key == pygame.K_SPACE:
-                        paused = not paused
-                    elif event.key == pygame.K_r:
-                        # NEW: смена цветовой схемы при перезапуске цикла
-                        arr = [random.randint(1, 100) for _ in range(n)]
-                        current_colors = generate_color_scheme(len(ALGORITHMS))
-                        for name, func in ALGORITHMS.items():
-                            arrays[name] = list(arr)
-                            generators[name] = func(arrays[name])
-                            done[name] = False
+                # Pause
+                elif event.key == pygame.K_SPACE:
+                    paused = not paused
+                # Restart
+                elif event.key == pygame.K_r:
+                    # NEW: смена цветовой схемы при перезапуске цикла
+                    arr = [random.randint(1, 100) for _ in range(n)]
+                    current_colors = generate_color_scheme(len(ALGORITHMS))
+                    for name, func in ALGORITHMS.items():
+                        arrays[name] = list(arr)
+                        generators[name] = func(arrays[name])
+                        done[name] = False
 
-            screen.fill((30, 30, 40))
+        screen.fill((20, 20, 30))  # Более темный фон для обоев
 
-            if not paused:
-                for name, gen in generators.items():
-                    if done.get(name):
-                        continue
-                    try:
-                        state = next(gen)
-                        arrays[name] = state
-                    except StopIteration:
-                        done[name] = True
-
-            # Панельки с текущей цветовой схемой
-            for i, (name, arr_data) in enumerate(arrays.items()):
-                x = (i % cols) * panel_w
-                y = (i // cols) * panel_h
-
-                panel_rect = pygame.Rect(x+2, y+2, panel_w-4, panel_h-4)
-                pygame.draw.rect(screen, (40, 40, 50), panel_rect)
-
-                draw_array(screen, arr_data, current_colors[i % len(current_colors)], x+8, y+30, panel_w-16, panel_h-40)
-
-                label = font.render(name, True, (230, 230, 230))
-                screen.blit(label, (x+10, y+6))
+        if not paused:
+            for name, gen in generators.items():
                 if done.get(name):
-                    done_label = font.render('done', True, (180, 255, 180))
-                    screen.blit(done_label, (x+panel_w-60, y+6))
+                    continue
+                try:
+                    state = next(gen)
+                    arrays[name] = state
+                except StopIteration:
+                    done[name] = True
 
-            pygame.display.flip()
-            clock.tick(60)
+                # Отрисовка панелей
+                for i, (name, arr_data) in enumerate(arrays.items()):
+                    x = (i % cols) * panel_w
+                    y = (i // cols) * panel_h
 
-        pygame.quit()
+                    panel_rect = pygame.Rect(x + 2, y + 2, panel_w - 4, panel_h - 4)
+                    pygame.draw.rect(screen, (40, 40, 50), panel_rect)
+                    draw_array(screen, arr_data, current_colors[i % len(current_colors)], x + 8, y + 30,
+                    panel_w - 16, panel_h - 40)
+                    label = font.render(name, True, (230, 230, 230))
+                    screen.blit(label, (x + 10, y + 6))
+                    if done.get(name):
+                        done_label = font.render('done', True, (180, 255, 180))
+                        screen.blit(done_label, (x + panel_w - 60, y + 6))
+        pygame.display.flip()
+        clock.tick(60)
 
+    pygame.quit()
 
 
 if __name__ == "__main__":
