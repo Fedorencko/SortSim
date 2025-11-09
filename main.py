@@ -349,7 +349,8 @@ def main():
         arrays[name] = list(arr)
         generators[name] = func(arrays[name])
 
-    current_colors = generate_gradient_scheme(len(ALGORITHMS))
+    # Инициализируем текущие цвета
+    current_colors = generate_color_scheme(len(ALGORITHMS))
 
     paused = False
     running = True
@@ -371,7 +372,7 @@ def main():
                 elif event.key == pygame.K_SPACE:
                     paused = not paused
                 elif event.key == pygame.K_r:
-                    # NEW: смена цветовой схемы при перезапуске цикла
+                    # При нажатии R генерируем новый массив И новую цветовую схему
                     arr = [random.randint(1, 100) for _ in range(n)]
                     current_colors = generate_color_scheme(len(ALGORITHMS))
                     for name, func in ALGORITHMS.items():
@@ -391,7 +392,7 @@ def main():
                 except StopIteration:
                     done[name] = True
 
-        # Панельки с текущей цветовой схемой
+        # Панельки с использованием текущей цветовой схемы
         for i, (name, arr_data) in enumerate(arrays.items()):
             x = (i % cols) * panel_w
             y = (i // cols) * panel_h
@@ -399,6 +400,7 @@ def main():
             panel_rect = pygame.Rect(x+2, y+2, panel_w-4, panel_h-4)
             pygame.draw.rect(screen, (40, 40, 50), panel_rect)
 
+            # Используем current_colors вместо глобального COLORS
             draw_array(screen, arr_data, current_colors[i % len(current_colors)], x+8, y+30, panel_w-16, panel_h-40)
 
             label = font.render(name, True, (230, 230, 230))
@@ -411,8 +413,6 @@ def main():
         clock.tick(60)
 
     pygame.quit()
-
-
 
 if __name__ == "__main__":
     main()
